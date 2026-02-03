@@ -1,5 +1,7 @@
 package com.example.springapp.service;
 
+import com.example.springapp.events.ProductEvent;
+import com.example.springapp.events.ProductEventPublisher;
 import com.example.springapp.models.Product;
 import com.example.springapp.repositories.ProductRepository;
 
@@ -11,6 +13,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -21,6 +24,9 @@ public class ProductService {
 
     @Autowired
     com.example.springapp.client.InventoryClient inventoryClient;
+
+    @Autowired
+    ProductEventPublisher productEventPublisher;
 
     @CacheEvict(value = "products", allEntries = true)
 
@@ -38,6 +44,17 @@ public class ProductService {
             // For now, logging.
             System.err.println("Failed to create inventory: " + e.getMessage());
         }
+
+        // Publish product created event
+        ProductEvent event = new ProductEvent(
+                ProductEvent.EventType.CREATED,
+                savedProduct.getId(),
+                savedProduct.getName(),
+                savedProduct.getCategory(),
+                savedProduct.getPrice(),
+                LocalDateTime.now());
+        productEventPublisher.publishProductEvent(event);
+
         return "Product added successfully with ID: " + savedProduct.getId();
     }
 
@@ -50,15 +67,41 @@ public class ProductService {
         }
         product.setId(id);
         product.setCreatedDate(existingProduct.getCreatedDate());
-        productRepository.saveAndFlush(product);
+        Product updatedProduct = productRepository.saveAndFlush(product);
+
+        // Publish product updated event
+        ProductEvent event = new ProductEvent(
+                ProductEvent.EventType.UPDATED,
+                updatedProduct.getId(),
+                updatedProduct.getName(),
+                updatedProduct.getCategory(),
+                updatedProduct.getPrice(),
+                LocalDateTime.now());
+        productEventPublisher.publishProductEvent(event);
+
         return "Product updated successfully";
     }
 
     @CacheEvict(value = { "product", "products" }, allEntries = true)
 
     public String deleteProduct(Long id) {
+        Product product = productRepository.findById(id).orElse(null);
+        if (product == null) {
+            return "Product not found or cannot be deleted";
+        }
+
         try {
             productRepository.deleteById(id);
+
+            // Publish product deleted event
+            ProductEvent event = new ProductEvent(
+                    ProductEvent.EventType.DELETED,
+                    id,
+                    product.getName(),
+                    product.getCategory(),
+                    product.getPrice(),
+                    LocalDateTime.now());
+            productEventPublisher.publishProductEvent(event);
         } catch (Exception e) {
             return "Product not found or cannot be deleted";
         }

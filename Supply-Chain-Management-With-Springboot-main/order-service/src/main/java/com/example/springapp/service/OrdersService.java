@@ -1,7 +1,10 @@
 package com.example.springapp.service;
 
+import com.example.springapp.events.OrderEvent;
+import com.example.springapp.events.OrderEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +26,9 @@ public class OrdersService {
 
     @Autowired
     com.example.springapp.client.InventoryClient inventoryClient;
+
+    @Autowired
+    OrderEventPublisher orderEventPublisher;
 
     @org.springframework.transaction.annotation.Transactional
     public String placeOrder(Orders order) {
@@ -48,6 +54,16 @@ public class OrdersService {
             }
         }
 
+        // Publish order created event
+        OrderEvent event = new OrderEvent(
+                OrderEvent.EventType.CREATED,
+                (long) savedOrder.getId(),
+                null, // will be set per item if needed
+                savedOrder.getItems() != null ? savedOrder.getItems().size() : 0,
+                savedOrder.getTotalAmount(),
+                LocalDateTime.now());
+        orderEventPublisher.publishOrderEvent(event);
+
         return "Order placed with order id " + savedOrder.getId();
     }
 
@@ -58,6 +74,17 @@ public class OrdersService {
         }
         order.setStatus("Accepted");
         ordersRepo.saveAndFlush(order);
+
+        // Publish order confirmed event
+        OrderEvent event = new OrderEvent(
+                OrderEvent.EventType.CONFIRMED,
+                (long) order.getId(),
+                null,
+                order.getItems() != null ? order.getItems().size() : 0,
+                order.getTotalAmount(),
+                LocalDateTime.now());
+        orderEventPublisher.publishOrderEvent(event);
+
         return "Order " + id + " Accepted";
     }
 
@@ -83,8 +110,23 @@ public class OrdersService {
     }
 
     public String deleteOrder(int id) {
+        Orders order = ordersRepo.findById(id).orElse(null);
+        if (order == null) {
+            return "Order not found";
+        }
+
         try {
             ordersRepo.deleteById(id);
+
+            // Publish order cancelled event
+            OrderEvent event = new OrderEvent(
+                    OrderEvent.EventType.CANCELLED,
+                    (long) id,
+                    null,
+                    order.getItems() != null ? order.getItems().size() : 0,
+                    order.getTotalAmount(),
+                    LocalDateTime.now());
+            orderEventPublisher.publishOrderEvent(event);
         } catch (Exception e) {
             return "Order not found";
         }

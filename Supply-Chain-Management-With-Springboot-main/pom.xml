@@ -25,6 +25,7 @@
 		<java.version>17</java.version>
 		<spring-cloud.version>2022.0.1</spring-cloud.version>
 		<lombok.version>1.18.34</lombok.version>
+		<spring-kafka.version>3.0.2</spring-kafka.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -34,6 +35,11 @@
 				<version>${spring-cloud.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.kafka</groupId>
+				<artifactId>spring-kafka</artifactId>
+				<version>${spring-kafka.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
