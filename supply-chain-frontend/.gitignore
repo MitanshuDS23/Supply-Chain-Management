@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ssr
+*.local
+.vite
+
+# logs
+*.log
+npm-debug.log*
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
