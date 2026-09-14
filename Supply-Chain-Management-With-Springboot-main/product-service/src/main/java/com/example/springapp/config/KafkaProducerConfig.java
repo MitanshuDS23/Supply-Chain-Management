@@ -26,6 +26,12 @@ public class KafkaProducerConfig {
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
+        // Fail fast when the broker is unavailable so REST requests are never blocked
+        // by Kafka metadata lookups (default max.block.ms is 60s).
+        configProps.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 3000);
+        configProps.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 3000);
+        configProps.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 3000);
+        configProps.put(ProducerConfig.RETRIES_CONFIG, 0);
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 

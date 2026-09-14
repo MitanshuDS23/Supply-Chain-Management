@@ -135,7 +135,9 @@ public class OrdersService {
 
     public Page<Orders> getAllOrders(int pageNumber, int pageSize) {
         Pageable paging = PageRequest.of(pageNumber, pageSize);
-        return ordersRepo.findAll(paging);
+        Page<Orders> orders = ordersRepo.findAll(paging);
+        orders.getContent().forEach(o -> o.setItems(orderItemRepo.findByOrderId(o.getId())));
+        return orders;
     }
 
     public Orders getOrderById(int id) {
@@ -144,12 +146,16 @@ public class OrdersService {
             order = new Orders();
             order.setId(-1);
             order.setStatus("Order not found");
+            return order;
         }
+        order.setItems(orderItemRepo.findByOrderId(order.getId()));
         return order;
     }
 
     public List<Orders> getOrderByStatus(String status, int pageNumber, int pageSize) {
         Pageable paging = PageRequest.of(pageNumber, pageSize);
-        return ordersRepo.findByStatus(status, paging).getContent();
+        List<Orders> orders = ordersRepo.findByStatus(status, paging).getContent();
+        orders.forEach(o -> o.setItems(orderItemRepo.findByOrderId(o.getId())));
+        return orders;
     }
 }
