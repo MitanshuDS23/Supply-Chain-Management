@@ -27,7 +27,7 @@ public class InventoryController {
         return inventoryService.createInventoryForProduct(productId, reorderLevel, maxCapacity, location);
     }
 
-    @PostMapping("/api/inventory/create-from-product")
+    @PostMapping("/create-from-product")
     public String createInventoryFromProduct(
             @RequestParam("productId") Long productId,
             @RequestParam("productName") String productName,

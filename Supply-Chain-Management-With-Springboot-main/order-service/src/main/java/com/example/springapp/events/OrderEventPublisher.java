@@ -19,12 +19,16 @@ public class OrderEventPublisher {
     }
 
     public void publishOrderEvent(OrderEvent event) {
-        try {
-            log.info("Publishing order event: {} for order ID: {}", event.getEventType(), event.getOrderId());
-            kafkaTemplate.send(orderEventsTopic, event.getOrderId().toString(), event);
-            log.info("Order event published successfully");
-        } catch (Exception e) {
-            log.error("Error publishing order event: {}", e.getMessage(), e);
-        }
+        // Fire-and-forget on a separate thread so a missing/slow broker never
+        // blocks the REST request that triggered the event.
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                log.info("Publishing order event: {} for order ID: {}", event.getEventType(), event.getOrderId());
+                kafkaTemplate.send(orderEventsTopic, event.getOrderId().toString(), event);
+                log.info("Order event published successfully");
+            } catch (Exception e) {
+                log.warn("Kafka unavailable, skipped order event {}: {}", event.getEventType(), e.getMessage());
+            }
+        });
     }
 }

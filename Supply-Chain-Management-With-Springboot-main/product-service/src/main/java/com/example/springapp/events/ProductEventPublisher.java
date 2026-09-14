@@ -19,12 +19,16 @@ public class ProductEventPublisher {
     }
 
     public void publishProductEvent(ProductEvent event) {
-        try {
-            log.info("Publishing product event: {} for product ID: {}", event.getEventType(), event.getProductId());
-            kafkaTemplate.send(productEventsTopic, event.getProductId().toString(), event);
-            log.info("Product event published successfully");
-        } catch (Exception e) {
-            log.error("Error publishing product event: {}", e.getMessage(), e);
-        }
+        // Fire-and-forget on a separate thread so a missing/slow broker never
+        // blocks the REST request that triggered the event.
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                log.info("Publishing product event: {} for product ID: {}", event.getEventType(), event.getProductId());
+                kafkaTemplate.send(productEventsTopic, event.getProductId().toString(), event);
+                log.info("Product event published successfully");
+            } catch (Exception e) {
+                log.warn("Kafka unavailable, skipped product event {}: {}", event.getEventType(), e.getMessage());
+            }
+        });
     }
 }

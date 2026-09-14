@@ -10,12 +10,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import com.example.springapp.models.PasswordUpdate;
 import com.example.springapp.models.Users;
 import com.example.springapp.service.UsersService;
 
 @RestController
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001" })
 public class UsersController {
 
     @Autowired
